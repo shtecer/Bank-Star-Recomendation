@@ -24,4 +24,5 @@ public class ClientService {
     public List<Client> getAllClients() {
         return bankClientsRepository.findAll();
     }
+
 }
