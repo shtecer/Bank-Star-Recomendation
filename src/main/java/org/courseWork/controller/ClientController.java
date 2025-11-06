@@ -1,15 +1,15 @@
 package org.courseWork.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.courseWork.model.Client;
 import org.courseWork.model.Product;
 import org.courseWork.service.ClientService;
 import org.courseWork.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
 import java.util.List;
@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
+@RequestMapping("/api")
 public class ClientController {
 
     @Autowired
@@ -45,8 +46,10 @@ public class ClientController {
 
         return ResponseEntity.ok(clients);
     }
-    @GetMapping("/recomendation/{id}")
-    public List<Product> getProductByUserId(@PathVariable String id) {
+    @Operation(summary = "Получить рекомендации по ID пользователя")
+    @ApiResponse(responseCode = "200", description = "Список рекомендованных продуктов")
+    @GetMapping("/recomendations/{id}")
+    public List<Product> getProductByUserId (@Parameter (description = "ID пользователя")@PathVariable String id) {
         UUID uuid = UUID.fromString(id);
         return productService.findProductByUserId(uuid);
     }

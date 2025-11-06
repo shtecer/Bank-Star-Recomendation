@@ -44,11 +44,11 @@ public class BankProductsRepository {
     }
 
     public List<Product> findProductByUserId(UUID userId) {
-        String sql = "SELECT pr.ID, tr.PRODUCT_ID, tr.USER_ID, pr.TYPE, tr.AMOUNT " +
+        String sql = "SELECT pr.NAME, pr.ID, tr.USER_ID, pr.TYPE, tr.PRODUCT_ID " +
                 "FROM PUBLIC.PRODUCTS pr " +
                 "JOIN PUBLIC.TRANSACTIONS tr ON pr.ID = tr.PRODUCT_ID " +
-                "WHERE tr.USER_ID = ? AND pr.TYPE = 'DEBIT' " +
-                "GROUP BY pr.ID, tr.PRODUCT_ID, tr.USER_ID, pr.TYPE, tr.AMOUNT " +
+                "WHERE tr.USER_ID = ? AND pr.TYPE = 'DEBIT' AND tr.TYPE = 'DEPOSIT' " +
+                "GROUP BY pr.ID, tr.PRODUCT_ID, tr.USER_ID, pr.TYPE " +
                 "HAVING SUM(tr.AMOUNT) > 1000";
 
         return jdbcTemplate.query(sql, new Object[]{userId.toString()}, (rs, rowNum) -> {
@@ -57,7 +57,7 @@ public class BankProductsRepository {
             product.setProductId(UUID.fromString(rs.getString("PRODUCT_ID")));
             product.setUserId(UUID.fromString(rs.getString("USER_ID")));
             product.setType(rs.getString("TYPE"));
-            product.setAmount(rs.getInt("AMOUNT"));
+           // product.setAmount(rs.getInt("AMOUNT"));
             return product;
         });
     }
