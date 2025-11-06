@@ -3,6 +3,7 @@ import org.courseWork.repository.BankClientsRepository;
 
 import java.util.UUID;
 
+
 public class Client {
     private UUID id;
     private String userName;

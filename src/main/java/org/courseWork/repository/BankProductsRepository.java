@@ -29,6 +29,7 @@ public class BankProductsRepository {
             return product;
         });
     }
+    
 
     public List<Product> findAll() {
         String sql = "SELECT * FROM PUBLIC.PRODUCTS";

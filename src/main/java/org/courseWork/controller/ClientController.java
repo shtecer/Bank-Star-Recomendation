@@ -24,6 +24,7 @@ public class ClientController {
     @Autowired
     private ClientService clientService;
 
+    
     @Autowired
     private ProductService productService;
 
