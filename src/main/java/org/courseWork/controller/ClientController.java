@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+
 @RestController
 @RequestMapping("/api")
 public class ClientController {
@@ -23,6 +24,7 @@ public class ClientController {
     @Autowired
     private ClientService clientService;
 
+    
     @Autowired
     private ProductService productService;
 

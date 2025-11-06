@@ -11,6 +11,7 @@ public class Product {
 
     public Product() {}
 
+    
     public Product(UUID id, UUID productId, UUID userId, String type, int amount) {
         this.id = id;
         this.productId = productId;

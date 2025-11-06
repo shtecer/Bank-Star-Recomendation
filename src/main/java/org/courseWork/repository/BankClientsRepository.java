@@ -25,6 +25,7 @@ public Client findById (UUID id) {
         return client;
     });
 }
+
     public List<Client> findAll() {
         String sql = "SELECT * FROM PUBLIC.USERS";
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
