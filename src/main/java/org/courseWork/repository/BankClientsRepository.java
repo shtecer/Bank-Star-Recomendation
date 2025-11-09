@@ -5,10 +5,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public class BankClientsRepository {
+public class BankClientsRepository implements UserRepository{
     private final JdbcTemplate jdbcTemplate;
 
     public BankClientsRepository(JdbcTemplate jdbcTemplate){
@@ -39,4 +40,13 @@ public Client findById (UUID id) {
     }
 
 
+    @Override
+    public Optional<org.courseWork.dto.Client> findById(Long id) {
+        return Optional.empty();
+    }
+
+    @Override
+    public boolean existsById(Long id) {
+        return false;
+    }
 }

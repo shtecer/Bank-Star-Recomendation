@@ -4,20 +4,16 @@ import java.util.UUID;
 
 public class Product {
     private UUID id;
-    private UUID productId;
-    private UUID userId;
-    private String type;
-    private int amount;
+    private String productName;
+    private String description;
 
     public Product() {}
 
     
-    public Product(UUID id, UUID productId, UUID userId, String type, int amount) {
+    public Product(UUID id, String productName, String description) {
         this.id = id;
-        this.productId = productId;
-        this.userId = userId;
-        this.type = type;
-        this.amount = amount;
+        this.productName = productName;
+        this.description = description;
     }
 
     public UUID getId() {
@@ -28,35 +24,19 @@ public class Product {
         this.id = id;
     }
 
-    public UUID getProductId() {
-        return productId;
+    public String getProductName() {
+        return productName;
     }
 
-    public void setProductId(UUID productId) {
-        this.productId = productId;
+    public void setProductName(String productName) {
+        this.productName = productName;
     }
 
-    public UUID getUserId() {
-        return userId;
+    public String getDescription() {
+        return description;
     }
 
-    public void setUserId(UUID user_id) {
-        this.userId = user_id;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public int getAmount() {
-        return amount;
-    }
-
-    public void setAmount(int amount) {
-        this.amount = amount;
+    public void setDescription(String description) {
+        this.description = description;
     }
 }
