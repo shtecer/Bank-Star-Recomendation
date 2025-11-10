@@ -1,36 +1,32 @@
 package org.courseWork.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import org.courseWork.dto.ProductOffer;
 import org.courseWork.model.Client;
-import org.courseWork.model.Product;
 import org.courseWork.service.ClientService;
-import org.courseWork.service.ProductService;
+import org.courseWork.service.RecommendationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 
 @RestController
 @RequestMapping("/api")
-public class ClientController {
+public class PublicRecommendationController {
+
+    private final RecommendationService recommendationService;
 
     @Autowired
-    private ClientService clientService;
+    private final ClientService clientService;
 
-    
-    @Autowired
-    private ProductService productService;
+    public PublicRecommendationController(RecommendationService recommendationService, ClientService clientService) {
 
-    public ClientController(ClientService clientService, ProductService productService) {
+        this.recommendationService = recommendationService;
         this.clientService = clientService;
-        this.productService = productService;
     }
     @GetMapping
     public String testApi() {
@@ -50,9 +46,19 @@ public class ClientController {
     }
     @Operation(summary = "Получить рекомендации по ID пользователя")
     @ApiResponse(responseCode = "200", description = "Список рекомендованных продуктов")
-    @GetMapping("/recomendations/{id}")
-    public List<Product> getProductByUserId (@Parameter (description = "ID пользователя")@PathVariable String id) {
-        UUID uuid = UUID.fromString(id);
-        return productService.findProductByUserId(uuid);
+    @GetMapping("/recommendations/{id}")
+    public ResponseEntity<List<ProductOffer>> getRecommendations(@RequestParam UUID userId) {
+        try {
+            if (userId == null) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            List<ProductOffer> recommendations = recommendationService.getRecommendedProducts(userId);
+            return ResponseEntity.ok(recommendations);
+
+        } catch (Exception e) {
+            System.err.println("Error getting recommendations for user " + userId + ": " + e.getMessage());
+            return ResponseEntity.status(500).build();
+        }
     }
 }
