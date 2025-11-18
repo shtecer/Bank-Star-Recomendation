@@ -1,80 +1,164 @@
 package org.courseWork.service;
 
-import org.courseWork.dto.ProductOffer;
-import org.courseWork.model.Product;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.courseWork.model.*;
+import org.courseWork.repository.ProductRepository;
+import org.courseWork.repository.ProductRuleRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Service
 public class RecommendationService {
 
-    private final RecommendationRulesChecker recommendationRulesCheckerService;
+    private final ProductRepository productRepository;
+    private final ProductRuleRepository ruleRepository;
+    private final RecommendationRulesChecker recommendationRulesChecker;
+    private final ObjectMapper objectMapper;
 
-    //добавляем продукты
-    private final Map<String, Product> availableProducts = Map.of(
-            "A", new Product(UUID.fromString("123e4567-e89b-12d3-a456-426614174000"), "Invest500", "Инвестиционный портфель"),
-            "B", new Product(UUID.fromString("123e4567-e89b-12d3-a456-426614174001"), "TopSaving", "Премиальная карта"),
-            "C", new Product(UUID.fromString("123e4567-e89b-12d3-a456-426614174002"), "Простой кредит", "Ипотечный кредит")
-    );
-
-
-    public RecommendationService(RecommendationRulesChecker recommendationRulesCheckerService) {
-        this.recommendationRulesCheckerService = recommendationRulesCheckerService;
+    public RecommendationService(ProductRepository productRepository,
+                                 ProductRuleRepository ruleRepository,
+                                 RecommendationRulesChecker recommendationRulesChecker, RecommendationRulesChecker recommendationRulesChecker1,
+                                 ObjectMapper objectMapper) {
+        this.productRepository = productRepository;
+        this.ruleRepository = ruleRepository;
+        this.recommendationRulesChecker = recommendationRulesChecker1;
+        this.objectMapper = objectMapper;
     }
 
     public List<ProductOffer> getRecommendedProducts(UUID userId) {
         System.out.println("Getting recommendations for user: " + userId);
 
-        List<ProductOffer> recommendations = new ArrayList<>();
+        // Получаем все активные правила
+        List<ProductRule> allRules = ruleRepository.findAllActive();
 
-        //проверяем каждый продукт
-        if (recommendationRulesCheckerService.isProductAEligible(userId)) {
-            Product productA = availableProducts.get("A");
-            recommendations.add(new ProductOffer(
-                    productA.getId(),
-                    productA.getProductName(),
-                    productA.getDescription()
-                   // productA.getPriority()
-            ));
-            System.out.println("Product A is eligible for user " + userId);
-        }
+        // Поскольку мы принимаем только userId, не фильтруем по productIds
+        // Если нужна фильтрация по продуктам, нужно изменить сигнатуру метода
 
-        if (recommendationRulesCheckerService.isProductBEligible(userId)) {
-            Product productB = availableProducts.get("B");
-            recommendations.add(new ProductOffer(
-                    productB.getId(),
-                    productB.getProductName(),
-                    productB.getDescription()
-            ));
-            System.out.println("Product B is eligible for user " + userId);
-        }
+        // Проверяем условия для каждого правила
+        List<ProductRule> eligibleRules = allRules.stream()
+                .filter(rule -> checkRuleConditions(rule, userId))
+                .collect(Collectors.toList());
 
-        if (recommendationRulesCheckerService.isProductCEligible(userId)) {
-            Product productC = availableProducts.get("C");
-            recommendations.add(new ProductOffer(
-                    productC.getId(),
-                    productC.getProductName(),
-                    productC.getDescription()
-            ));
-            System.out.println("Product C is eligible for user " + userId);
-        }
+        // Получаем информацию о продуктах
+        List<UUID> eligibleProductIds = eligibleRules.stream()
+                .map(ProductRule::getProductId)
+                .distinct()
+                .collect(Collectors.toList());
 
-        System.out.println("Found " + recommendations.size() + " recommendations for user " + userId);
-        return recommendations;
+        List<Product> eligibleProducts = productRepository.findByIds(eligibleProductIds);
+        Map<UUID, Product> productMap = eligibleProducts.stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
+
+        // Создаем предложения
+        List<ProductOffer> offers = eligibleRules.stream()
+                .filter(rule -> productMap.containsKey(rule.getProductId()))
+                .map(rule -> {
+                    Product product = productMap.get(rule.getProductId());
+                    return new ProductOffer(product.getId(), product.getProductName(), product.getDescription());
+                })
+                .collect(Collectors.toList());
+
+        System.out.println("Found " + offers.size() + " recommendations for user " + userId);
+        return offers;
     }
 
-    //метод для проверки всех условий сразу (для отладки)
-    public Map<String, Boolean> checkAllEligibilities(UUID userId) {
-        Map<String, Boolean> results = new HashMap<>();
-        results.put("PRODUCT_A", recommendationRulesCheckerService.isProductAEligible(userId));
-        results.put("PRODUCT_B", recommendationRulesCheckerService.isProductBEligible(userId));
-        results.put("PRODUCT_C", recommendationRulesCheckerService.isProductCEligible(userId));
-        return results;
+    private boolean checkRuleConditions(ProductRule rule, UUID userId) {
+        try {
+            // Парсим JSON условия
+            RuleCondition condition = objectMapper.readValue(rule.getConditionJson(), RuleCondition.class);
+            return checkSingleCondition(condition, userId);
+
+        } catch (Exception e) {
+            System.err.println("Error parsing rule condition for rule " + rule.getRuleName() + ": " + e.getMessage());
+            return false;
+        }
     }
-    //получение всех продуктов
+
+    private boolean checkSingleCondition(RuleCondition condition, UUID userId) {
+        if (condition == null) {
+            return false;
+        }
+
+        switch (condition.getType().toUpperCase()) {
+            case "HAS_PRODUCT":
+                return recommendationRulesChecker.hasProductType(userId, condition.getProductType());
+
+            case "NO_PRODUCT":
+                return recommendationRulesChecker.hasNoProductType(userId, condition.getProductType());
+
+            case "MIN_TRANSACTION_COUNT":
+                return recommendationRulesChecker.hasMinTransactionCount(
+                        userId, condition.getProductType(), condition.getTransactionType(), condition.getMinCount());
+
+            case "MIN_AMOUNT":
+                return recommendationRulesChecker.hasMinAmount(
+                        userId, condition.getProductType(), condition.getTransactionType(), condition.getMinAmount());
+
+            case "AMOUNT_COMPARISON":
+                return recommendationRulesChecker.compareAmounts(
+                        userId, condition.getProductType(), condition.getComparisonType(), condition.getComparisonAmount());
+
+            default:
+                System.err.println("Unknown condition type: " + condition.getType());
+                return false;
+        }
+    }
+
+    public ProductRule createRule(ProductRule request) {
+        try {
+            ProductRule rule = new ProductRule();
+            rule.setProductId(request.getProductId());
+            rule.setRuleName(request.getRuleName());
+            rule.setRuleDescription(request.getRuleDescription());
+            rule.setActive(request.getActive() != null ? request.getActive() : true);
+            rule.setConditionType("CUSTOM");
+
+            // Просто копируем conditionJson как есть
+            rule.setConditionJson(request.getConditionJson());
+
+            return ruleRepository.save(rule);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error creating rule: " + e.getMessage(), e);
+        }
+    }
+
     public List<Product> getAllAvailableProducts() {
-        return new ArrayList<>(availableProducts.values());
+        return productRepository.findAllActive();
+    }
+
+    public List<ProductRule> getProductRules(UUID productId) {
+        return ruleRepository.findByProductId(productId);
+    }
+
+    public void deleteRule(UUID ruleId) {
+        // Проверяем существование правила перед удалением
+        Optional<ProductRule> existingRule = ruleRepository.findById(ruleId);
+        if (existingRule.isEmpty()) {
+            throw new RulesNotFoundException(ruleId);
+        }
+
+        // Выполняем удаление
+        ruleRepository.deleteById(ruleId);
+    }
+
+    // Альтернативный вариант с мягким удалением
+    public void softDeleteRule(UUID ruleId) {
+        Optional<ProductRule> existingRule = ruleRepository.findById(ruleId);
+        if (existingRule.isEmpty()) {
+            throw new RulesNotFoundException(ruleId);
+        }
+
+        ruleRepository.softDeleteById(ruleId);
+    }
+
+    // Метод для получения правила по ID
+    public ProductRule getRuleById(UUID ruleId) {
+        return ruleRepository.findById(ruleId)
+                .orElseThrow(() -> new RulesNotFoundException(ruleId));
     }
 }

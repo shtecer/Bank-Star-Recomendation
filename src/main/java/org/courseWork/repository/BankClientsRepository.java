@@ -40,10 +40,6 @@ public Client findById (UUID id) {
     }
 
 
-    @Override
-    public Optional<org.courseWork.dto.Client> findById(Long id) {
-        return Optional.empty();
-    }
 
     @Override
     public boolean existsById(Long id) {

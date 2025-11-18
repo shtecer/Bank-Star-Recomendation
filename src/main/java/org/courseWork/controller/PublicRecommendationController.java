@@ -2,11 +2,12 @@ package org.courseWork.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import org.courseWork.dto.ProductOffer;
-import org.courseWork.model.Client;
+import org.courseWork.model.*;
 import org.courseWork.service.ClientService;
 import org.courseWork.service.RecommendationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Collection;
@@ -22,12 +23,15 @@ public class PublicRecommendationController {
 
     @Autowired
     private final ClientService clientService;
+    private final RecommendationService recommendationDynamicRuleService;
 
-    public PublicRecommendationController(RecommendationService recommendationService, ClientService clientService) {
-
+    public PublicRecommendationController(RecommendationService recommendationDynamicRuleService,
+                                          RecommendationService recommendationService, ClientService clientService) {
+        this.recommendationDynamicRuleService = recommendationDynamicRuleService;
         this.recommendationService = recommendationService;
         this.clientService = clientService;
     }
+
     @GetMapping
     public String testApi() {
         return "Welcome to Demo!";
@@ -60,5 +64,41 @@ public class PublicRecommendationController {
             System.err.println("Error getting recommendations for user " + userId + ": " + e.getMessage());
             return ResponseEntity.status(500).build();
         }
+    }
+
+    @Operation(summary = "Создание динамического правила", description = "Создает новое динамическое правило")
+    @PostMapping
+    @ApiResponse(responseCode = "200", description = "Правило успешно создано")
+
+    public ResponseEntity<ProductRule> createRule(@RequestBody ProductRule rule) {
+        if (rule.getRuleName() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        ProductRule savedRule = recommendationDynamicRuleService.createRule(rule);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(savedRule);
+    }
+
+    @Operation(summary = "Удаление правила", description = "Удаляет правило по его ID")
+    @DeleteMapping("/{id}")
+    @ApiResponse(responseCode = "204", description = "Правило удалено")
+
+    public ResponseEntity<Void> deleteRule(@PathVariable UUID id) {
+        try {
+            recommendationDynamicRuleService.deleteRule(id);
+            return ResponseEntity.noContent().build();
+        } catch (RulesNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @Operation(summary = "Получение всех динамических правил", description = "Возвращает список всех динамических правил")
+    @GetMapping("/allProduct")
+    @ApiResponse(responseCode = "200", description = "Правила получены")
+
+    public ResponseEntity<List<Product>> getAllRules() {
+        List<Product> rules = recommendationDynamicRuleService.getAllAvailableProducts();
+        return ResponseEntity.ok(rules);
     }
 }
