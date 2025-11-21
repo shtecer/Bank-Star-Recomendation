@@ -1,7 +1,6 @@
-package org.courseWork.dto;
+package org.courseWork.model;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.UUID;
 
 public class ProductOffer {
