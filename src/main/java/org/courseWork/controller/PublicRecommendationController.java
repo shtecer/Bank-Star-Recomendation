@@ -3,7 +3,9 @@ package org.courseWork.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.courseWork.model.*;
+import org.courseWork.rules.model.RecommendationRule;
 import org.courseWork.service.ClientService;
+import org.courseWork.service.RecommendationDynamicRuleService;
 import org.courseWork.service.RecommendationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,10 +25,10 @@ public class PublicRecommendationController {
 
     @Autowired
     private final ClientService clientService;
-    private final RecommendationService recommendationDynamicRuleService;
+    private final RecommendationDynamicRuleService recommendationDynamicRuleService;
 
-    public PublicRecommendationController(RecommendationService recommendationDynamicRuleService,
-                                          RecommendationService recommendationService, ClientService clientService) {
+    public PublicRecommendationController(RecommendationService recommendationService,
+                                          RecommendationDynamicRuleService recommendationDynamicRuleService, ClientService clientService) {
         this.recommendationDynamicRuleService = recommendationDynamicRuleService;
         this.recommendationService = recommendationService;
         this.clientService = clientService;
@@ -70,11 +72,11 @@ public class PublicRecommendationController {
     @PostMapping
     @ApiResponse(responseCode = "200", description = "Правило успешно создано")
 
-    public ResponseEntity<ProductRule> createRule(@RequestBody ProductRule rule) {
-        if (rule.getRuleName() == null) {
+    public ResponseEntity<RecommendationRule> createRule(@RequestBody RecommendationRule rule) {
+        if (rule.getName() == null) {
             return ResponseEntity.badRequest().build();
         }
-        ProductRule savedRule = recommendationDynamicRuleService.createRule(rule);
+        RecommendationRule savedRule = recommendationDynamicRuleService.createRule(rule);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(savedRule);
